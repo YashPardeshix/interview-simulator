@@ -6,9 +6,16 @@ import os
 
 load_dotenv()
 
+api_key = os.getenv("DEEPSEEK_API_KEY")
+if not api_key:
+    raise RuntimeError(
+        "DEEPSEEK_API_KEY is not set. "
+        "Add it to your .env file before starting the server."
+    )
+
 llm = ChatOpenAI(
     model="deepseek-chat",
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
+    api_key=api_key,
     base_url="https://api.deepseek.com"
 )
 
