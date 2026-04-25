@@ -1,6 +1,9 @@
 from langgraph.graph import StateGraph, END
 from state import InterviewState
 from nodes import system_design_node, technical_node, behavioral_node, evaluation_node
+from langgraph.checkpoint.memory import MemorySaver
+
+memory = MemorySaver()
 
 def router_function(state: InterviewState):
     if state["current_phase"] == "technical":
@@ -11,7 +14,7 @@ def router_function(state: InterviewState):
         return "evaluation_node"
     else:
         return "END"
-    
+
 
 graph = StateGraph(InterviewState)
 graph.add_node("system_design_node", system_design_node)
@@ -22,6 +25,9 @@ graph.set_entry_point("system_design_node")
 graph.add_conditional_edges("system_design_node", router_function)
 graph.add_conditional_edges("technical_node", router_function)
 graph.add_conditional_edges("behavioral_node", router_function)
-compiled_graph = graph.compile()
+compiled_graph = graph.compile(
+    checkpointer=memory,
+    interrupt_before=["technical_node", "behavioral_node", "evaluation_node"]
+)
 
 

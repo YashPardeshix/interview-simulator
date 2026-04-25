@@ -165,6 +165,7 @@ export default function InterviewSimulator() {
   const [askedQuestions, setAskedQuestions] = useState([]);
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
+  const [threadId, setThreadId] = useState("");
 
   const handleStartInterview = async (candidateData) => {
     setCandidate(candidateData);
@@ -172,6 +173,7 @@ export default function InterviewSimulator() {
     const data = await response.json();
     setCurrentQuestion(data.current_question);
     setCurrentPhase(data.current_phase);
+    setThreadId(data.thread_id);
     setAllAnswers([]);
     setAskedQuestions([data.current_question]);
     setScreen("interview");
@@ -190,6 +192,7 @@ export default function InterviewSimulator() {
         current_phase: currentPhase,
         all_answers: updatedAnswers,
         asked_questions: updatedQuestions,
+        hread_id: threadId,
       }),
     });
     const data = await response.json();
@@ -204,6 +207,7 @@ export default function InterviewSimulator() {
           current_phase: "evaluation",
           all_answers: updatedAnswers,
           asked_questions: updatedQuestions,
+          thread_id: threadId,
         }),
       });
       setLoading(true);
