@@ -76,11 +76,16 @@ const WelcomeScreen = ({ onStart }) => {
   );
 };
 
-const InterviewScreen = ({ currentQuestion, currentPhase, onSubmitAnswer }) => {
+const InterviewScreen = ({
+  currentQuestion,
+  currentPhase,
+  onSubmitAnswer,
+  loading,
+}) => {
   const [answer, setAnswer] = useState("");
 
   const handleSubmit = () => {
-    if (answer.trim()) {
+    if (answer.trim() && !loading) {
       onSubmitAnswer(answer);
       setAnswer("");
     }
@@ -115,8 +120,12 @@ const InterviewScreen = ({ currentQuestion, currentPhase, onSubmitAnswer }) => {
             {answer.length} characters
           </p>
         </div>
-        <Button onClick={handleSubmit} className="w-full py-3 text-lg">
-          Submit Answer
+        <Button
+          onClick={handleSubmit}
+          className={`w-full py-3 text-lg ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+          disabled={loading}
+        >
+          {loading ? "AI is thinking..." : "Submit Answer"}
         </Button>
       </NeuCard>
     </div>
@@ -180,47 +189,48 @@ export default function InterviewSimulator() {
   };
 
   const handleSubmitAnswer = async (answer) => {
+    setLoading(true);
+
     const updatedAnswers = [...allAnswers, answer];
     const updatedQuestions = [...askedQuestions];
     setAllAnswers(updatedAnswers);
 
-    const response = await fetch("http://localhost:8000/answer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        answer,
-        current_phase: currentPhase,
-        all_answers: updatedAnswers,
-        asked_questions: updatedQuestions,
-        hread_id: threadId,
-      }),
-    });
-    const data = await response.json();
-
-    if (data.current_phase === "evaluation") {
-      setLoading(true);
-      const evalResponse = await fetch("http://localhost:8000/answer", {
+    try {
+      const response = await fetch("http://localhost:8000/answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          answer: "",
-          current_phase: "evaluation",
+          answer,
+          current_phase: currentPhase,
           all_answers: updatedAnswers,
           asked_questions: updatedQuestions,
           thread_id: threadId,
         }),
       });
-      setLoading(true);
-      const evalData = await evalResponse.json();
-      if (evalData.scores && evalData.scores.feedback) {
-        setFeedback(evalData.scores.feedback);
+
+      const data = await response.json();
+
+      if (
+        data.is_complete ||
+        data.current_phase === "complete" ||
+        data.current_phase === "evaluation"
+      ) {
+        if (data.scores && data.scores.feedback) {
+          setFeedback(data.scores.feedback);
+        }
+        setScreen("scorecard");
+      } else {
+        setCurrentQuestion(data.current_question);
+        setCurrentPhase(data.current_phase);
+        setAskedQuestions([...updatedQuestions, data.current_question]);
       }
-      setScreen("scorecard");
+    } catch (error) {
+      console.error("Error during interview step:", error);
+      alert(
+        "Something went wrong with the AI connection. Please check the backend console.",
+      );
+    } finally {
       setLoading(false);
-    } else {
-      setCurrentQuestion(data.current_question);
-      setCurrentPhase(data.current_phase);
-      setAskedQuestions([...updatedQuestions, data.current_question]);
     }
   };
 
@@ -256,6 +266,7 @@ export default function InterviewSimulator() {
           currentQuestion={currentQuestion}
           currentPhase={currentPhase}
           onSubmitAnswer={handleSubmitAnswer}
+          loading={loading}
         />
       )}
       {!loading && screen === "scorecard" && (

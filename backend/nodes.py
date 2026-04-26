@@ -20,26 +20,27 @@ llm = ChatOpenAI(
 )
 
 def system_design_node(state: InterviewState):
-    question = get_random_question("technical") 
+    question = get_random_question("system_design") 
     return {
-        "current_phase": "technical", 
+        "current_phase": "system_design", 
         "questions_asked": state["questions_asked"] + [question],
         "current_question": question
     }
 
 def technical_node(state: InterviewState):
-    question = get_random_question("behavioral")
+    question = get_random_question("technical")
     return {
-        "current_phase": "behavioral",
+        "current_phase": "technical",
         "questions_asked": state["questions_asked"] + [question],
         "current_question": question
     }
 
 def behavioral_node(state: InterviewState):
+    question = get_random_question("behavioral")
     return {
-        "current_phase": "evaluation",
-        "questions_asked": state["questions_asked"], 
-        "current_question": ""
+        "current_phase": "behavioral",
+        "questions_asked": state["questions_asked"] + [question],
+        "current_question": question
     }
 
 def evaluation_node(state: InterviewState):

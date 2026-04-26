@@ -6,11 +6,11 @@ from langgraph.checkpoint.memory import MemorySaver
 memory = MemorySaver()
 
 def router_function(state: InterviewState):
-    if state["current_phase"] == "technical":
+    if state["current_phase"] == "system_design":
         return "technical_node"
-    elif state["current_phase"] == "behavioral":
+    elif state["current_phase"] == "technical":
         return "behavioral_node"
-    elif state["current_phase"] == "evaluation":
+    elif state["current_phase"] == "behavioral":
         return "evaluation_node"
     else:
         return "END"
@@ -29,5 +29,4 @@ compiled_graph = graph.compile(
     checkpointer=memory,
     interrupt_before=["technical_node", "behavioral_node", "evaluation_node"]
 )
-
 
