@@ -19,29 +19,44 @@ llm = ChatOpenAI(
     base_url="https://api.deepseek.com"
 )
 
-def system_design_node(state: InterviewState):
-    question = get_random_question("system_design") 
+def interview_node(state: InterviewState):
+    phase = state["current_phase"]
+    count = state["topic_follow_up_count"]
+    topic = state["current_topic"]
+    history = state["questions_asked"]
+
+    if count < 2 and topic != "":
+        prompt = f"We are in the {phase} phase. The topic is {topic}. Ask a follow-up. You have {2-count} follow-ups left."
+        response = llm.invoke(prompt)
+        
+        new_question = response.content
+        new_count = count + 1
+        new_topic = topic 
+        new_phase_count = state["phase_topic_count"] 
+    else:
+        new_question = get_random_question(phase)
+        new_count = 0
+        new_topic = new_question 
+        new_phase_count = state["phase_topic_count"] + 1 
+
     return {
-        "current_phase": "system_design", 
-        "questions_asked": state["questions_asked"] + [question],
-        "current_question": question
+        "current_question": new_question,
+        "questions_asked": history + [new_question],
+        "topic_follow_up_count": new_count,
+        "current_topic": new_topic,
+        "phase_topic_count": new_phase_count
     }
 
-def technical_node(state: InterviewState):
-    question = get_random_question("technical")
-    return {
-        "current_phase": "technical",
-        "questions_asked": state["questions_asked"] + [question],
-        "current_question": question
-    }
 
-def behavioral_node(state: InterviewState):
-    question = get_random_question("behavioral")
-    return {
-        "current_phase": "behavioral",
-        "questions_asked": state["questions_asked"] + [question],
-        "current_question": question
-    }
+def prepare_for_system_design(state: InterviewState):
+    return {"current_phase": "system_design", "topic_follow_up_count": 0, "phase_topic_count": 0, "current_topic": ""}
+
+def prepare_for_technical(state: InterviewState):
+    return {"current_phase": "technical", "topic_follow_up_count": 0, "phase_topic_count": 0, "current_topic": ""}
+
+def prepare_for_behavioral(state: InterviewState):
+    return {"current_phase": "behavioral", "topic_follow_up_count": 0, "phase_topic_count": 0, "current_topic": ""}
+
 
 def evaluation_node(state: InterviewState):
     questions = state["questions_asked"]

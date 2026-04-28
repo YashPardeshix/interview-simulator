@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import axios from "axios";
 
 const NeuCard = ({ children, className = "" }) => (
   <div
@@ -170,65 +171,43 @@ export default function InterviewSimulator() {
   const [candidate, setCandidate] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [currentPhase, setCurrentPhase] = useState("");
-  const [allAnswers, setAllAnswers] = useState([]);
-  const [askedQuestions, setAskedQuestions] = useState([]);
-  const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
   const [threadId, setThreadId] = useState("");
+  const [feedback, setFeedback] = useState("");
 
   const handleStartInterview = async (candidateData) => {
     setCandidate(candidateData);
-    const response = await fetch("http://localhost:8000/start");
-    const data = await response.json();
-    setCurrentQuestion(data.current_question);
-    setCurrentPhase(data.current_phase);
-    setThreadId(data.thread_id);
-    setAllAnswers([]);
-    setAskedQuestions([data.current_question]);
-    setScreen("interview");
+    setLoading(true);
+    try {
+      const response = await axios.get("http://localhost:8000/start");
+      setThreadId(response.data.thread_id);
+      setCurrentQuestion(response.data.current_question);
+      setCurrentPhase(response.data.current_phase);
+      setScreen("interview");
+    } catch (err) {
+      alert("System could not start. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmitAnswer = async (answer) => {
     setLoading(true);
-
-    const updatedAnswers = [...allAnswers, answer];
-    const updatedQuestions = [...askedQuestions];
-    setAllAnswers(updatedAnswers);
-
     try {
-      const response = await fetch("http://localhost:8000/answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          answer,
-          current_phase: currentPhase,
-          all_answers: updatedAnswers,
-          asked_questions: updatedQuestions,
-          thread_id: threadId,
-        }),
+      const response = await axios.post("http://localhost:8000/answer", {
+        answer: answer,
+        thread_id: threadId,
       });
 
-      const data = await response.json();
-
-      if (
-        data.is_complete ||
-        data.current_phase === "complete" ||
-        data.current_phase === "evaluation"
-      ) {
-        if (data.scores && data.scores.feedback) {
-          setFeedback(data.scores.feedback);
-        }
+      if (response.data.is_complete) {
+        setFeedback(response.data.feedback);
         setScreen("scorecard");
       } else {
-        setCurrentQuestion(data.current_question);
-        setCurrentPhase(data.current_phase);
-        setAskedQuestions([...updatedQuestions, data.current_question]);
+        setCurrentQuestion(response.data.current_question);
+        setCurrentPhase(response.data.current_phase);
       }
-    } catch (error) {
-      console.error("Error during interview step:", error);
-      alert(
-        "Something went wrong with the AI connection. Please check the backend console.",
-      );
+    } catch (err) {
+      alert("Error sending answer.");
     } finally {
       setLoading(false);
     }
@@ -239,8 +218,6 @@ export default function InterviewSimulator() {
     setCandidate(null);
     setCurrentQuestion("");
     setCurrentPhase("");
-    setAllAnswers([]);
-    setAskedQuestions([]);
     setFeedback("");
   };
 
