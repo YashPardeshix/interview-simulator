@@ -1,182 +1,54 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  User,
+  Briefcase,
+  ChevronRight,
+  CheckCircle,
+  RefreshCcw,
+  Loader2,
+  Printer,
+} from "lucide-react";
 
-const NeuCard = ({ children, className = "" }) => (
-  <div
-    className={`bg-gray-800 rounded-2xl shadow-lg border border-gray-700 ${className}`}
+const GlassCard = ({ children, className = "" }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    className={`bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl ${className}`}
   >
     {children}
-  </div>
+  </motion.div>
 );
 
-const PhaseBadge = ({ phase }) => (
-  <span className="bg-red-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-    {phase}
-  </span>
-);
-
-const Button = ({ onClick, children, className = "" }) => (
-  <button
-    onClick={onClick}
-    className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 focus:outline-none bg-red-600 hover:bg-red-700 text-white shadow-lg ${className}`}
-  >
-    {children}
-  </button>
-);
-
-const WelcomeScreen = ({ onStart }) => {
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("");
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 flex items-center justify-center p-4">
-      <NeuCard className="w-full max-w-md p-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Interview Simulator
-          </h1>
-          <p className="text-gray-400">Prepare for your technical interview</p>
-        </div>
-        <div className="space-y-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-gray-300 font-semibold text-sm">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
-              className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:border-red-600 focus:outline-none"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-gray-300 font-semibold text-sm">
-              Target Role
-            </label>
-            <input
-              type="text"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="e.g. Frontend Developer"
-              className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:border-red-600 focus:outline-none"
-            />
-          </div>
-          <Button
-            onClick={() => {
-              if (name.trim() && role.trim()) onStart({ name, role });
-            }}
-            className="w-full py-3 text-lg"
-          >
-            Start Interview
-          </Button>
-        </div>
-      </NeuCard>
+const StyledInput = ({ label, icon: Icon, ...props }) => (
+  <div className="space-y-2">
+    <label className="text-zinc-400 text-xs font-medium uppercase tracking-widest ml-1">
+      {label}
+    </label>
+    <div className="relative">
+      <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 w-5 h-5" />
+      <input
+        {...props}
+        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+      />
     </div>
-  );
-};
-
-const InterviewScreen = ({
-  currentQuestion,
-  currentPhase,
-  onSubmitAnswer,
-  loading,
-}) => {
-  const [answer, setAnswer] = useState("");
-
-  const handleSubmit = () => {
-    if (answer.trim() && !loading) {
-      onSubmitAnswer(answer);
-      setAnswer("");
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 p-4 flex items-center justify-center">
-      <NeuCard className="w-full max-w-2xl p-8">
-        <div className="mb-8">
-          <PhaseBadge phase={currentPhase} />
-        </div>
-        <div className="mb-8">
-          <NeuCard className="p-6 bg-gray-900 border-gray-600">
-            <p className="text-gray-300 text-sm font-semibold mb-3">Question</p>
-            <p className="text-white text-lg leading-relaxed">
-              {currentQuestion}
-            </p>
-          </NeuCard>
-        </div>
-        <div className="mb-6">
-          <label className="text-gray-300 font-semibold text-sm block mb-2">
-            Your Answer
-          </label>
-          <textarea
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
-            placeholder="Type your answer here..."
-            rows={6}
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:border-red-600 focus:outline-none resize-none"
-          />
-          <p className="text-gray-500 text-xs mt-2">
-            {answer.length} characters
-          </p>
-        </div>
-        <Button
-          onClick={handleSubmit}
-          className={`w-full py-3 text-lg ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-          disabled={loading}
-        >
-          {loading ? "AI is thinking..." : "Submit Answer"}
-        </Button>
-      </NeuCard>
-    </div>
-  );
-};
-
-const ScorecardScreen = ({ candidate, feedback, onRestart }) => (
-  <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 p-4 flex items-center justify-center">
-    <NeuCard className="w-full max-w-md p-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">
-          Interview Complete
-        </h2>
-        <p className="text-gray-400">Here's your performance summary</p>
-      </div>
-      <NeuCard className="p-6 bg-gray-900 border-gray-600 mb-6">
-        <p className="text-gray-300 text-sm font-semibold mb-2">
-          Candidate Info
-        </p>
-        <p className="text-white mb-1">
-          <span className="text-gray-400">Name:</span> {candidate.name}
-        </p>
-        <p className="text-white">
-          <span className="text-gray-400">Role:</span> {candidate.role}
-        </p>
-      </NeuCard>
-      <div className="mb-8 p-4 bg-gray-900 rounded-lg border border-gray-700">
-        <p className="text-gray-400 text-sm font-semibold mb-3">AI Feedback</p>
-        <div className="text-gray-200 text-sm leading-relaxed prose prose-invert">
-          <ReactMarkdown>{feedback}</ReactMarkdown>
-        </div>
-      </div>
-      <Button onClick={onRestart} className="w-full py-3 text-lg">
-        Restart Interview
-      </Button>
-    </NeuCard>
   </div>
 );
 
 export default function InterviewSimulator() {
   const [screen, setScreen] = useState("welcome");
-  const [candidate, setCandidate] = useState(null);
+  const [candidate, setCandidate] = useState({ name: "", role: "" });
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [currentPhase, setCurrentPhase] = useState("");
   const [loading, setLoading] = useState(false);
   const [threadId, setThreadId] = useState("");
   const [feedback, setFeedback] = useState("");
 
-  const handleStartInterview = async (candidateData) => {
-    setCandidate(candidateData);
+  const handleStartInterview = async () => {
+    if (!candidate.name || !candidate.role) return;
     setLoading(true);
     try {
       const response = await axios.get("http://localhost:8000/start");
@@ -185,7 +57,7 @@ export default function InterviewSimulator() {
       setCurrentPhase(response.data.current_phase);
       setScreen("interview");
     } catch (err) {
-      alert("System could not start. Is the backend running?");
+      alert("System could not start. Please check backend.");
     } finally {
       setLoading(false);
     }
@@ -193,66 +65,219 @@ export default function InterviewSimulator() {
 
   const handleSubmitAnswer = async (answer) => {
     setLoading(true);
+    setCurrentQuestion("");
+
     try {
       const response = await axios.post("http://localhost:8000/answer", {
         answer: answer,
         thread_id: threadId,
       });
 
-      if (response.data.is_complete) {
-        setFeedback(response.data.feedback);
+      const data = response.data;
+
+      if (data.is_complete || data.current_phase === "complete") {
+        setFeedback(data.scores?.feedback || "Evaluation complete.");
         setScreen("scorecard");
       } else {
-        setCurrentQuestion(response.data.current_question);
-        setCurrentPhase(response.data.current_phase);
+        setCurrentQuestion(data.current_question);
+        setCurrentPhase(data.current_phase);
+        const textArea = document.getElementById("answer-input");
+        if (textArea) textArea.value = "";
       }
     } catch (err) {
-      alert("Error sending answer.");
+      alert("Error connection lost.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRestart = () => {
-    setScreen("welcome");
-    setCandidate(null);
-    setCurrentQuestion("");
-    setCurrentPhase("");
-    setFeedback("");
-  };
-
   return (
-    <div className="bg-gray-900">
-      {loading && (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-white text-2xl font-bold mb-2">
-              Evaluating your answers...
-            </p>
-            <p className="text-gray-400">
-              DeepSeek is analyzing your responses
-            </p>
-          </div>
-        </div>
-      )}
-      {!loading && screen === "welcome" && (
-        <WelcomeScreen onStart={handleStartInterview} />
-      )}
-      {!loading && screen === "interview" && (
-        <InterviewScreen
-          currentQuestion={currentQuestion}
-          currentPhase={currentPhase}
-          onSubmitAnswer={handleSubmitAnswer}
-          loading={loading}
-        />
-      )}
-      {!loading && screen === "scorecard" && (
-        <ScorecardScreen
-          candidate={candidate}
-          feedback={feedback}
-          onRestart={handleRestart}
-        />
-      )}
+    <div className="min-h-screen bg-[#09090b] text-white font-sans selection:bg-blue-500/30">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[25%] -left-[10%] w-[50%] h-[50%] bg-blue-600/10 blur-[120px] rounded-full" />
+        <div className="absolute -bottom-[25%] -right-[10%] w-[50%] h-[50%] bg-purple-600/10 blur-[120px] rounded-full" />
+      </div>
+
+      <main className="relative z-10 max-w-4xl mx-auto min-h-screen flex items-center justify-center p-6">
+        <AnimatePresence mode="wait">
+          {screen === "welcome" && (
+            <GlassCard key="welcome" className="w-full max-w-lg p-10 space-y-8">
+              <div className="text-center space-y-2">
+                <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
+                  Lumina
+                </h1>
+                <p className="text-zinc-400 font-light">
+                  Your professional AI interview partner.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <StyledInput
+                  label="Full Name"
+                  icon={User}
+                  placeholder="Steve Rogers"
+                  value={candidate.name}
+                  onChange={(e) =>
+                    setCandidate({ ...candidate, name: e.target.value })
+                  }
+                />
+                <StyledInput
+                  label="Target Role"
+                  icon={Briefcase}
+                  placeholder="Senior Software Engineer"
+                  value={candidate.role}
+                  onChange={(e) =>
+                    setCandidate({ ...candidate, role: e.target.value })
+                  }
+                />
+                <button
+                  onClick={handleStartInterview}
+                  className="w-full bg-white text-black py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors group"
+                >
+                  Begin Experience
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            </GlassCard>
+          )}
+
+          {screen === "interview" && !loading && (
+            <GlassCard key="interview" className="w-full p-10 space-y-10">
+              <div className="flex items-center justify-between">
+                <div className="px-4 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                  Phase: {currentPhase.replace("_", " ")}
+                </div>
+                <div className="flex gap-1">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className={`w-1.5 h-1.5 rounded-full ${i === 1 ? "bg-blue-500" : "bg-white/10"}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h2 className="text-3xl font-medium leading-tight text-zinc-100">
+                  {currentQuestion}
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                <textarea
+                  autoFocus
+                  placeholder="Type your response..."
+                  className="w-full bg-transparent border-b border-white/10 py-4 text-xl text-white placeholder-zinc-700 focus:outline-none focus:border-blue-500 transition-all resize-none min-h-[150px]"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && e.metaKey)
+                      handleSubmitAnswer(e.target.value);
+                  }}
+                  id="answer-input"
+                />
+                <div className="flex items-center justify-between">
+                  <p className="text-zinc-500 text-xs">
+                    Press{" "}
+                    <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-[10px]">
+                      CMD + ENTER
+                    </kbd>{" "}
+                    to submit
+                  </p>
+                  <button
+                    onClick={() =>
+                      handleSubmitAnswer(
+                        document.getElementById("answer-input").value,
+                      )
+                    }
+                    className="bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </div>
+            </GlassCard>
+          )}
+
+          {loading && (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center gap-4"
+            >
+              <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+              <p className="text-zinc-400 font-light tracking-widest animate-pulse">
+                ANALYZING DEPTH
+              </p>
+            </motion.div>
+          )}
+
+          {screen === "scorecard" && (
+            <GlassCard
+              key="scorecard"
+              className="w-full max-w-3xl p-12 space-y-10 max-h-[90vh] overflow-y-auto custom-scrollbar"
+            >
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/10 pb-8">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 text-blue-500 mb-2">
+                    <CheckCircle className="w-6 h-6" />
+                    <span className="text-xs font-bold uppercase tracking-[0.3em]">
+                      Certification Issued
+                    </span>
+                  </div>
+                  <h2 className="text-4xl font-bold tracking-tight">
+                    Performance Report
+                  </h2>
+                  <p className="text-zinc-400 font-light text-lg">
+                    Candidate:{" "}
+                    <span className="text-white font-medium">
+                      {candidate.name}
+                    </span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-zinc-500 text-xs uppercase tracking-widest mb-1">
+                    Target Role
+                  </p>
+                  <p className="text-xl font-medium text-zinc-200">
+                    {candidate.role}
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500/50 to-transparent rounded-full opacity-20" />
+                <div
+                  className="pl-8 prose prose-zinc prose-invert max-w-none 
+                    prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-white
+                    prose-h3:text-blue-400 prose-h3:text-sm prose-h3:uppercase prose-h3:tracking-[0.2em]
+                    prose-p:text-zinc-300 prose-p:leading-relaxed prose-p:text-lg
+                    prose-li:text-zinc-300 prose-strong:text-white prose-strong:font-semibold"
+                >
+                  <ReactMarkdown>{feedback}</ReactMarkdown>
+                </div>
+              </div>
+
+              <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="flex-1 bg-white text-black py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-zinc-200 transition-all active:scale-[0.98]"
+                >
+                  <RefreshCcw className="w-4 h-4" />
+                  Start New Evaluation
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="px-8 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl font-medium transition-all flex items-center justify-center gap-2"
+                >
+                  <Printer className="w-4 h-4 text-zinc-400" />
+                  Download PDF
+                </button>
+              </div>
+            </GlassCard>
+          )}
+        </AnimatePresence>
+      </main>
     </div>
   );
 }

@@ -50,5 +50,6 @@ def submit_answer(input: AnswerInput):
     return {
         "current_phase": result["current_phase"],
         "current_question": result["current_question"],
-        "is_complete": result.get("current_phase") == "complete"
+        "is_complete": result.get("current_phase") == "complete",
+        "scores": result.get("scores", {})
     }
