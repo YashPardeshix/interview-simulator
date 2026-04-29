@@ -18,11 +18,13 @@ class AnswerInput(BaseModel):
     thread_id: str
 
 @app.get("/start")
-def start_interview():
+def start_interview(user_id: str, role: str):
     thread_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
   
     initial_state = {
+        "user_id": user_id,
+        "target_role": role,
         "current_phase": "system_design",
         "questions_asked": [],
         "user_response": [],

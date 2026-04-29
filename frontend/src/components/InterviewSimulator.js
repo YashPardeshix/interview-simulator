@@ -38,7 +38,7 @@ const StyledInput = ({ label, icon: Icon, ...props }) => (
   </div>
 );
 
-export default function InterviewSimulator() {
+export default function InterviewSimulator({ session }) {
   const [screen, setScreen] = useState("welcome");
   const [candidate, setCandidate] = useState({ name: "", role: "" });
   const [currentQuestion, setCurrentQuestion] = useState("");
@@ -51,7 +51,13 @@ export default function InterviewSimulator() {
     if (!candidate.name || !candidate.role) return;
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:8000/start");
+      const response = await axios.get("http://localhost:8000/start", {
+        params: {
+          user_id: session.user.id,
+          role: candidate.role,
+        },
+      });
+
       setThreadId(response.data.thread_id);
       setCurrentQuestion(response.data.current_question);
       setCurrentPhase(response.data.current_phase);

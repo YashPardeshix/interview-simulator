@@ -3,8 +3,13 @@ from mcp_server import get_random_question
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 import os
+from supabase import create_client, Client
 
 load_dotenv()
+
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_KEY")
+supabase: Client = create_client(supabase_url, supabase_key)
 
 api_key = os.getenv("DEEPSEEK_API_KEY")
 if not api_key:
@@ -26,7 +31,6 @@ def interview_node(state: InterviewState):
     history = state["questions_asked"]
 
     if count < 2 and topic != "":
-        # FIXED: Changed variable name from system_prompt to prompt to match the invoke call below
         prompt = f"""
 ROLE: Senior Technical Interviewer ({phase} phase).
 TOPIC: {topic}
@@ -71,13 +75,14 @@ def prepare_for_behavioral(state: InterviewState):
 
 
 def evaluation_node(state: InterviewState):
+  
     questions = state.get("questions_asked", [])
     answers = state.get("user_response", [])
+   
    
     interview_transcript = ""
     for i, (q, a) in enumerate(zip(questions, answers)):
         interview_transcript += f"### Round {i+1}\n**Question:** {q}\n**Candidate Answer:** {a}\n\n"
-
 
     evaluation_prompt = f"""
     You are a Senior Lead Engineer and Hiring Manager. 
@@ -96,13 +101,25 @@ def evaluation_node(state: InterviewState):
     IMPORTANT: Do not output any conversational filler. Start directly with the evaluation.
     """
 
+    
     response = llm.invoke(evaluation_prompt)
+    report = response.content 
+   
+    try:
+        supabase.table("interviews").insert({
+            "user_id": state.get("user_id"),
+            "feedback_report": report,
+            "target_role": state.get("target_role", "General Software Engineer")
+        }).execute()
+    except Exception as e:
+        print(f"Database error: {e}")
+
     
     return {
         "current_phase": "complete",
         "is_complete": True,
         "current_question": "", 
         "scores": {
-            "feedback": response.content 
+            "feedback": report 
         }
     }
