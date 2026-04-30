@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from graph import compiled_graph
 import uuid
+from nodes import supabase
 
 app = FastAPI()
 
@@ -55,3 +56,19 @@ def submit_answer(input: AnswerInput):
         "is_complete": result.get("current_phase") == "complete",
         "scores": result.get("scores", {})
     }
+
+@app.get("/history/{user_id}")
+def get_interview_history(user_id: str):
+    print(f"DEBUG: Fetching history for User ID: {user_id}") 
+    try:
+        response = supabase.table("interviews") \
+            .select("*") \
+            .eq("user_id", user_id) \
+            .order("created_at", desc=True) \
+            .execute()
+            
+        print(f"DEBUG: Found {len(response.data)} rows.") 
+        return response.data
+    except Exception as e:
+        print(f"DEBUG: Error: {e}")
+        return {"error": str(e)}

@@ -46,6 +46,24 @@ export default function InterviewSimulator({ session }) {
   const [loading, setLoading] = useState(false);
   const [threadId, setThreadId] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [history, setHistory] = useState([]);
+
+  const handleViewHistory = async () => {
+    setLoading(true);
+    console.log("DEBUG: Current session user ID:", session.user.id);
+    try {
+      const response = await axios.get(
+        `http://localhost:8000/history/${session.user.id}`,
+      );
+      console.log("DEBUG: Data received from server:", response.data);
+      setHistory(response.data);
+      setScreen("history");
+    } catch (err) {
+      alert("Could not load history.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleStartInterview = async () => {
     if (!candidate.name || !candidate.role) return;
@@ -143,8 +161,92 @@ export default function InterviewSimulator({ session }) {
                   Begin Experience
                   <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
+                <button
+                  onClick={handleViewHistory}
+                  className="w-full bg-white/5 text-white py-4 rounded-2xl font-semibold border border-white/10 hover:bg-white/10 transition-all flex items-center justify-center gap-2 mt-4"
+                >
+                  <RefreshCcw className="w-4 h-4 text-zinc-400" />
+                  View Past Interviews
+                </button>
               </div>
             </GlassCard>
+          )}
+
+          {screen === "history" && (
+            <motion.div
+              key="history-view"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="w-full max-w-4xl space-y-8"
+            >
+              <div className="flex items-center justify-between bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md">
+                <div>
+                  <h2 className="text-3xl font-bold tracking-tight">Vault</h2>
+                  <p className="text-zinc-500 text-sm">
+                    Your past performance records
+                  </p>
+                </div>
+                <button
+                  onClick={() => setScreen("welcome")}
+                  className="bg-white/5 hover:bg-white/10 px-6 py-3 rounded-2xl text-sm font-medium transition-all flex items-center gap-2 border border-white/10"
+                >
+                  <RefreshCcw className="w-4 h-4 rotate-180" />
+                  Return to Lobby
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {history.length > 0 ? (
+                  history.map((item) => (
+                    <GlassCard
+                      key={item.id}
+                      className="p-8 group hover:border-blue-500/50 transition-all cursor-default"
+                    >
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="p-3 bg-blue-500/10 rounded-2xl">
+                          <Briefcase className="w-6 h-6 text-blue-500" />
+                        </div>
+                        <span className="text-[10px] text-zinc-500 font-mono tracking-widest bg-white/5 px-2 py-1 rounded-md">
+                          {new Date(item.created_at).toLocaleDateString(
+                            undefined,
+                            { year: "numeric", month: "short", day: "numeric" },
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 mb-8">
+                        <p className="text-zinc-500 text-[10px] uppercase tracking-[0.2em]">
+                          Target Role
+                        </p>
+                        <h3 className="text-2xl font-bold text-white group-hover:text-blue-400 transition-colors capitalize">
+                          {item.target_role}
+                        </h3>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setFeedback(item.feedback_report);
+                          setScreen("scorecard");
+                        }}
+                        className="w-full py-4 bg-white/5 group-hover:bg-blue-600 group-hover:text-white rounded-2xl text-sm font-semibold transition-all border border-white/10 flex items-center justify-center gap-2"
+                      >
+                        Open Full Report
+                        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </GlassCard>
+                  ))
+                ) : (
+                  <div className="col-span-full py-20 text-center space-y-4 bg-white/5 rounded-3xl border border-dashed border-white/10">
+                    <Loader2 className="w-8 h-8 text-zinc-700 mx-auto" />
+                    <p className="text-zinc-500 font-light italic">
+                      The vault is currently empty. Complete an interview to see
+                      it here.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           )}
 
           {screen === "interview" && !loading && (

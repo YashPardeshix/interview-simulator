@@ -2,8 +2,10 @@ from state import InterviewState
 from mcp_server import get_random_question
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
-import os
 from supabase import create_client, Client
+from pypdf import PdfReader
+import os
+import io
 
 load_dotenv()
 
@@ -123,3 +125,10 @@ def evaluation_node(state: InterviewState):
             "feedback": report 
         }
     }
+
+def extract_text_from_pdf(file_bytes):
+    reader = PdfReader(io.BytesIO(file_bytes))
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
+    return text
