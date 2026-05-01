@@ -1,9 +1,11 @@
+import state
 from state import InterviewState
 from mcp_server import get_random_question
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from pypdf import PdfReader
+import json
 import os
 import io
 
@@ -32,18 +34,23 @@ def interview_node(state: InterviewState):
     topic = state["current_topic"]
     history = state["questions_asked"]
 
+    profile = state.get("candidate_profile", {})
+
     if count < 2 and topic != "":
         prompt = f"""
 ROLE: Senior Technical Interviewer ({phase} phase).
 TOPIC: {topic}
 REMAINING FOLLOW-UPS: {2 - count}
 
+CANDIDATE BACKGROUND (From Resume):
+{profile}
+
 STRICT OUTPUT RULES:
 1. Output ONLY the question or hint. 
 2. NEVER output "Candidate Response", "Hypothetical", or "Reasoning".
 3. NEVER output internal labels like "Your Follow-Up Question".
 4. If you have 0 follow-ups left, you MUST call 'get_random_question' immediately.
-5. Do not be overly polite. Be professional and direct.
+5. If the current TOPIC relates to something in the CANDIDATE BACKGROUND, ask a specific, highly-tailored question about how they used it in their past projects.
 """
         response = llm.invoke(prompt)
         
@@ -52,7 +59,8 @@ STRICT OUTPUT RULES:
         new_topic = topic 
         new_phase_count = state["phase_topic_count"] 
     else:
-        new_question = get_random_question(phase)
+        profile = state.get("candidate_profile", {})
+        new_question = get_random_question(phase, profile)
         new_count = 0
         new_topic = new_question 
         new_phase_count = state["phase_topic_count"] + 1 
@@ -132,3 +140,35 @@ def extract_text_from_pdf(file_bytes):
     for page in reader.pages:
         text += page.extract_text()
     return text
+
+
+
+def profiler_node(state: InterviewState):
+    resume = state.get("resume_text", "")
+    
+    prompt = f"""
+    You are an Expert Resume Profiler. 
+    Analyze the following resume text and extract ONLY the technical skills and major projects.
+    
+    RESUME TEXT:
+    {resume}
+    
+    OUTPUT FORMAT:
+    You MUST return a valid JSON object with this exact structure:
+    {{
+        "skills": ["skill1", "skill2"],
+        "projects": [
+            {{"name": "Project Name", "tech_stack": ["tech1"], "summary": "Brief description"}}
+        ]
+    }}
+    Do not include any other text. Only the JSON.
+    """
+    
+    response = llm.invoke(prompt)
+    
+    try:
+        clean_profile = json.loads(response.content)
+    except:
+        clean_profile = {"skills": [], "projects": []}
+
+    return {"candidate_profile": clean_profile}

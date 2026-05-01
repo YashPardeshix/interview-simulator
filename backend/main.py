@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from graph import compiled_graph
 import uuid
 from nodes import supabase
+from fastapi import FastAPI, File, UploadFile, Form
+from nodes import extract_text_from_pdf 
 
 app = FastAPI()
 
@@ -18,17 +20,30 @@ class AnswerInput(BaseModel):
     answer: str
     thread_id: str
 
-@app.get("/start")
-def start_interview(user_id: str, role: str):
+@app.post("/start") 
+async def start_interview(
+    user_id: str = Form(...), 
+    role: str = Form(...),
+    resume: UploadFile = File(...) 
+):
+    print(f"DEBUG: Received interview request for User: {user_id}, Role: {role}")
+    
+    file_bytes = await resume.read()
+    
+    resume_text = extract_text_from_pdf(file_bytes)
+    print(f"DEBUG: Extracted {len(resume_text)} characters from resume.")
+   
     thread_id = str(uuid.uuid4())
     config = {"configurable": {"thread_id": thread_id}}
   
     initial_state = {
         "user_id": user_id,
         "target_role": role,
+        "resume_text": resume_text,
+        "candidate_profile": {},    
         "current_phase": "system_design",
         "questions_asked": [],
-        "user_response": [],
+        "user_response":[],
         "topic_follow_up_count": 0,
         "phase_topic_count": 0,
         "current_topic": ""
@@ -41,7 +56,6 @@ def start_interview(user_id: str, role: str):
         "current_phase": result["current_phase"],
         "current_question": result["current_question"]
     }
-
 @app.post("/answer")
 def submit_answer(input: AnswerInput):
     config = {"configurable": {"thread_id": input.thread_id}}

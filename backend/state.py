@@ -13,3 +13,5 @@ class InterviewState(TypedDict):
     scores: dict
     is_complete: bool
     target_role: str
+    resume_text: str           
+    candidate_profile: dict 
