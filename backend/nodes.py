@@ -25,7 +25,9 @@ if not api_key:
 llm = ChatOpenAI(
     model="deepseek-chat",
     api_key=api_key,
-    base_url="https://api.deepseek.com"
+    base_url="https://api.deepseek.com",
+    timeout=30, 
+    max_retries=1
 )
 
 def interview_node(state: InterviewState):
@@ -38,20 +40,24 @@ def interview_node(state: InterviewState):
 
     if count < 2 and topic != "":
         prompt = f"""
-ROLE: Senior Technical Interviewer ({phase} phase).
-TOPIC: {topic}
-REMAINING FOLLOW-UPS: {2 - count}
+        You are a Senior Lead Interviewer.
+        PHASE: {phase}
+        TOPIC: {topic}
+        REMAINING FOLLOW-UPS: {2 - count}
 
-CANDIDATE BACKGROUND (From Resume):
-{profile}
+        CANDIDATE BACKGROUND:
+        {profile}
 
-STRICT OUTPUT RULES:
-1. Output ONLY the question or hint. 
-2. NEVER output "Candidate Response", "Hypothetical", or "Reasoning".
-3. NEVER output internal labels like "Your Follow-Up Question".
-4. If you have 0 follow-ups left, you MUST call 'get_random_question' immediately.
-5. If the current TOPIC relates to something in the CANDIDATE BACKGROUND, ask a specific, highly-tailored question about how they used it in their past projects.
-"""
+        PHASE LOGIC (CRITICAL):
+        - If Technical: Ask a deep, challenging question about the internals and code of the topic.
+        - If System Design: Ask about architecture, scaling, and system integration.
+        - If Behavioral: Ask about leadership, conflict, deadlines, or teamwork. ZERO technical or coding questions allowed in this phase.
+
+        STRICT OUTPUT RULES:
+        1. Output ONLY the question. No filler.
+        2. Max length: 2 to 3 sentences.
+        3. Tailor the question to their CANDIDATE BACKGROUND if relevant.
+        """
         response = llm.invoke(prompt)
         
         new_question = response.content
@@ -95,44 +101,49 @@ def evaluation_node(state: InterviewState):
         interview_transcript += f"### Round {i+1}\n**Question:** {q}\n**Candidate Answer:** {a}\n\n"
 
     evaluation_prompt = f"""
-    You are a Senior Lead Engineer and Hiring Manager. 
-    Review the following interview transcript and provide a world-class performance evaluation.
+    You are a Senior Lead Engineer. 
+    Review this interview transcript and provide a brief, punchy performance evaluation.
 
     TRANSCRIPT:
     {interview_transcript}
 
-    OUTPUT FORMAT RULES:
-    1. Use professional Markdown (Headers, Bold text, Bullet points).
-    2. Section 1: **Overall Impression** (2-3 sentences).
-    3. Section 2: **Technical Strengths** (Bullet points).
-    4. Section 3: **Areas for Improvement** (Bullet points).
-    5. Section 4: **Final Verdict** (Strong Hire / Hire / No Hire) and a Score out of 100.
+    OUTPUT FORMAT RULES (CRITICAL):
+    1. KEEP IT SHORT. Maximum 200 words total. Do not write long paragraphs.
+    2. Use professional Markdown (Headers, Bullet points).
+    3. Include exactly 4 sections: 
+       ### Overall Impression
+       ### Top Strength (1 bullet)
+       ### Area for Improvement (1 bullet)
+       ### Final Verdict (Hire / No Hire)
     
-    IMPORTANT: Do not output any conversational filler. Start directly with the evaluation.
+    IMPORTANT: Output ONLY the evaluation. Start immediately.
     """
 
     
-    response = llm.invoke(evaluation_prompt)
-    report = response.content 
-   
+    try:
+        response = llm.invoke(evaluation_prompt)
+        report = response.content 
+    except Exception as e:
+        print(f"LLM Timeout Error: {e}")
+        report = "### System Notice\n\nThe AI evaluation engine timed out due to heavy global server load on DeepSeek. Your interview was completed successfully and saved, but the scorecard generation failed. Please try again later."
+
     try:
         supabase.table("interviews").insert({
             "user_id": state.get("user_id"),
             "feedback_report": report,
-            "target_role": state.get("target_role", "General Software Engineer")
+            "target_role": state.get("target_role", "Software Engineer")
         }).execute()
     except Exception as e:
         print(f"Database error: {e}")
 
-    
     return {
         "current_phase": "complete",
         "is_complete": True,
         "current_question": "", 
-        "scores": {
-            "feedback": report 
-        }
+        "scores": {"feedback": report}
     }
+
+
 
 def extract_text_from_pdf(file_bytes):
     reader = PdfReader(io.BytesIO(file_bytes))
