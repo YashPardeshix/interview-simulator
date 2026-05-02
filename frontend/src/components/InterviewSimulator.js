@@ -40,75 +40,288 @@ const StyledInput = ({ label, icon: Icon, ...props }) => (
     </div>
   </div>
 );
+const SignalBadge = ({ text }) => {
+  const upper = text?.toUpperCase() || "";
+  const color = upper.includes("STRONG")
+    ? { bg: "#052e16", border: "#166534", text: "#4ade80" }
+    : upper.includes("WEAK")
+      ? { bg: "#450a0a", border: "#991b1b", text: "#f87171" }
+      : { bg: "#451a03", border: "#92400e", text: "#fbbf24" };
+  return (
+    <span
+      style={{
+        background: color.bg,
+        border: `1px solid ${color.border}`,
+        color: color.text,
+        padding: "2px 10px",
+        borderRadius: "4px",
+        fontSize: "10px",
+        fontWeight: "700",
+        letterSpacing: "0.15em",
+        fontFamily: "monospace",
+        textTransform: "uppercase",
+      }}
+    >
+      {text}
+    </span>
+  );
+};
 
-const ScorecardScreen = ({ candidate, feedback }) => (
-  <GlassCard
-    key="scorecard"
-    className="w-full max-w-4xl p-16 space-y-12 max-h-[90vh] overflow-y-auto custom-scrollbar border-t-blue-500/30 border-t-2"
+const renderWithBadges = (text) => {
+  return text.split(/(STRONG|MODERATE|WEAK)/).map((part, index) => {
+    if (part === "STRONG" || part === "MODERATE" || part === "WEAK") {
+      return <SignalBadge key={index} text={part} />;
+    }
+    return part;
+  });
+};
+
+const VerdictStamp = ({ isHire }) => (
+  <div
+    style={{
+      display: "inline-block",
+      border: `3px solid ${isHire ? "#16a34a" : "#dc2626"}`,
+      color: isHire ? "#16a34a" : "#dc2626",
+      padding: "6px 20px",
+      borderRadius: "4px",
+      fontSize: "28px",
+      fontWeight: "900",
+      letterSpacing: "0.25em",
+      fontFamily: "monospace",
+      transform: "rotate(-2deg)",
+      boxShadow: `0 0 0 1px ${isHire ? "#16a34a" : "#dc2626"}`,
+      opacity: 0.9,
+    }}
   >
-    <div className="flex flex-col md:flex-row md:items-start justify-between gap-8 pb-10 border-b border-white/5">
-      <div className="space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
-          <Trophy className="w-3.5 h-3.5 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">
-            Official Evaluation
-          </span>
+    {isHire ? "HIRE" : "NO HIRE"}
+  </div>
+);
+
+const ScorecardScreen = ({ candidate, feedback }) => {
+  const isHire = feedback?.includes("NO HIRE")
+    ? false
+    : feedback?.includes("HIRE");
+
+  return (
+    <motion.div
+      key="scorecard"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{
+        width: "100%",
+        maxWidth: "800px",
+        background: "#0a0a0a",
+        border: "1px solid #1f1f1f",
+        borderRadius: "8px",
+        padding: "0",
+        overflow: "hidden",
+        maxHeight: "90vh",
+        overflowY: "auto",
+      }}
+    >
+      <div
+        style={{
+          borderBottom: "1px solid #1f1f1f",
+          padding: "32px 48px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              display: "inline-block",
+              background: "#1a0000",
+              border: "1px solid #7f1d1d",
+              color: "#ef4444",
+              padding: "3px 12px",
+              fontSize: "9px",
+              fontWeight: "700",
+              letterSpacing: "0.3em",
+              fontFamily: "monospace",
+              marginBottom: "16px",
+            }}
+          >
+            CONFIDENTIAL — POST-INTERVIEW EVALUATION
+          </div>
+          <h2
+            style={{
+              fontSize: "36px",
+              fontWeight: "800",
+              color: "#ffffff",
+              margin: "0 0 8px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Performance Brief
+          </h2>
+          <div
+            style={{ fontSize: "13px", color: "#555", fontFamily: "monospace" }}
+          >
+            <span style={{ color: "#888" }}>CANDIDATE:</span>{" "}
+            <span style={{ color: "#ccc" }}>{candidate.name || "Unknown"}</span>
+            <span style={{ margin: "0 12px", color: "#333" }}>|</span>
+            <span style={{ color: "#888" }}>ROLE:</span>{" "}
+            <span style={{ color: "#ccc" }}>{candidate.role || "Unknown"}</span>
+          </div>
         </div>
-        <h2 className="text-5xl font-bold tracking-tighter text-white">
-          Performance Brief
-        </h2>
-        <div className="flex items-center gap-4 text-zinc-500 font-light italic">
-          <span>
-            Candidate:{" "}
-            <span className="text-white font-normal not-italic">
-              {candidate.name}
-            </span>
-          </span>
-          <span className="w-1 h-1 bg-zinc-800 rounded-full" />
-          <span>
-            Role:{" "}
-            <span className="text-white font-normal not-italic">
-              {candidate.role}
-            </span>
-          </span>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: "12px",
+          }}
+        >
+          <VerdictStamp isHire={isHire} />
+          <button
+            onClick={() => window.print()}
+            style={{
+              background: "transparent",
+              border: "1px solid #222",
+              color: "#555",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "11px",
+              fontFamily: "monospace",
+            }}
+          >
+            PRINT
+          </button>
         </div>
       </div>
-      <div className="flex gap-2">
-        <button
-          onClick={() => window.print()}
-          className="p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all group border border-white/5"
+
+      <div style={{ padding: "40px 48px" }}>
+        <div
+          className="prose prose-invert max-w-none"
+          style={{ fontFamily: "monospace" }}
         >
-          <Printer className="w-5 h-5 text-zinc-400 group-hover:text-white" />
+          <style>{`
+            .scorecard-body h2 {
+              font-size: 10px !important;
+              font-weight: 700 !important;
+              letter-spacing: 0.3em !important;
+              color: #444 !important;
+              text-transform: uppercase !important;
+              margin: 32px 0 12px !important;
+              padding-bottom: 8px !important;
+              border-bottom: 1px solid #1a1a1a !important;
+            }
+            .scorecard-body p {
+              font-size: 14px !important;
+              line-height: 1.8 !important;
+              color: #aaa !important;
+              font-family: monospace !important;
+            }
+            .scorecard-body strong {
+              color: #e5e5e5 !important;
+              font-weight: 600 !important;
+            }
+            .scorecard-body ul {
+              padding-left: 16px !important;
+            }
+            .scorecard-body li {
+              font-size: 14px !important;
+              color: #aaa !important;
+              line-height: 1.8 !important;
+              font-family: monospace !important;
+            }
+          `}</style>
+          <div className="scorecard-body">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => {
+                  const processChildren = (kids) => {
+                    return React.Children.map(kids, (child) => {
+                      if (typeof child === "string") {
+                        return renderWithBadges(child);
+                      }
+                      return child;
+                    });
+                  };
+                  return (
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        lineHeight: "1.8",
+                        color: "#aaa",
+                        fontFamily: "monospace",
+                      }}
+                    >
+                      {processChildren(children)}
+                    </p>
+                  );
+                },
+                code: ({ children }) => (
+                  <code
+                    style={{
+                      background: "#1a1a1a",
+                      border: "1px solid #2a2a2a",
+                      color: "#e2e8f0",
+                      padding: "1px 6px",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      fontFamily: "monospace",
+                    }}
+                  >
+                    {children}
+                  </code>
+                ),
+                strong: ({ children }) => {
+                  const text = typeof children === "string" ? children : "";
+                  if (
+                    text === "STRONG" ||
+                    text === "WEAK" ||
+                    text === "MODERATE"
+                  ) {
+                    return <SignalBadge text={text} />;
+                  }
+                  return (
+                    <strong style={{ color: "#e5e5e5", fontWeight: "600" }}>
+                      {children}
+                    </strong>
+                  );
+                },
+              }}
+            >
+              {feedback}
+            </ReactMarkdown>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          borderTop: "1px solid #1a1a1a",
+          padding: "24px 48px",
+          display: "flex",
+          gap: "12px",
+        }}
+      >
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            flex: 1,
+            background: "#ffffff",
+            color: "#000000",
+            border: "none",
+            padding: "16px",
+            borderRadius: "8px",
+            fontWeight: "900",
+            fontSize: "11px",
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            cursor: "pointer",
+          }}
+        >
+          Start New Evaluation
         </button>
       </div>
-    </div>
-
-    <div className="relative">
-      <div className="absolute -left-8 top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/50 via-white/5 to-transparent" />
-      <div
-        className="prose prose-zinc prose-invert max-w-none 
-          prose-headings:font-bold prose-headings:tracking-tighter prose-headings:text-white
-          prose-h2:text-3xl prose-h2:mb-6 prose-h2:mt-12
-          prose-h3:text-[11px] prose-h3:uppercase prose-h3:tracking-[0.3em] prose-h3:text-blue-400 prose-h3:font-black prose-h3:bg-blue-500/5 prose-h3:w-fit prose-h3:px-3 prose-h3:py-1 prose-h3:rounded-md
-          prose-p:text-zinc-400 prose-p:leading-[1.8] prose-p:text-lg prose-p:font-light
-          prose-strong:text-white prose-strong:font-semibold
-          prose-li:text-zinc-400 prose-li:marker:text-blue-500"
-      >
-        <ReactMarkdown>{feedback}</ReactMarkdown>
-      </div>
-    </div>
-
-    {/* Footer */}
-    <div className="pt-10 flex gap-4">
-      <button
-        onClick={() => window.location.reload()}
-        className="flex-1 bg-white text-black py-5 rounded-3xl font-black uppercase tracking-widest text-xs hover:bg-zinc-200 transition-all active:scale-[0.98] shadow-xl shadow-white/5"
-      >
-        Start New Evaluation
-      </button>
-    </div>
-  </GlassCard>
-);
+    </motion.div>
+  );
+};
 
 export default function InterviewSimulator({ session }) {
   const [screen, setScreen] = useState("welcome");
@@ -148,6 +361,7 @@ export default function InterviewSimulator({ session }) {
     try {
       const formData = new FormData();
       formData.append("user_id", session.user.id);
+      formData.append("name", candidate.name);
       formData.append("role", candidate.role);
       formData.append("resume", resumeFile);
 
@@ -190,13 +404,11 @@ export default function InterviewSimulator({ session }) {
         const { value, done } = await reader.read();
         if (done) {
           finished = true;
+          setLoading(false);
           break;
         }
-
         const chunk = decoder.decode(value, { stream: true });
-
         setLoading(false);
-
         setCurrentQuestion((prev) => prev + chunk);
       }
 
@@ -398,7 +610,29 @@ export default function InterviewSimulator({ session }) {
                 </div>
               </div>
               <h2 className="text-4xl font-light leading-relaxed text-zinc-100 tracking-tight italic">
-                "{currentQuestion}"
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => <span>{children}</span>,
+                    code: ({ children }) => (
+                      <code
+                        style={{
+                          background: "#1a1a1a",
+                          border: "1px solid #2a2a2a",
+                          color: "#93c5fd",
+                          padding: "1px 8px",
+                          borderRadius: "4px",
+                          fontSize: "28px",
+                          fontFamily: "monospace",
+                          fontStyle: "normal",
+                        }}
+                      >
+                        {children}
+                      </code>
+                    ),
+                  }}
+                >
+                  {currentQuestion}
+                </ReactMarkdown>
               </h2>
               <div className="space-y-6 pt-12 border-t border-white/5 relative">
                 <textarea

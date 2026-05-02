@@ -2,6 +2,7 @@ from typing import TypedDict
 
 class InterviewState(TypedDict):
     user_id: str  
+    name: str
     current_phase: str
     questions_asked: list[str]
     user_response: list[str]

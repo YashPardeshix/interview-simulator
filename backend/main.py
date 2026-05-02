@@ -24,6 +24,7 @@ class AnswerInput(BaseModel):
 @app.post("/start") 
 async def start_interview( 
     user_id: str = Form(...), 
+    name: str = Form(...),
     role: str = Form(...), 
     resume: UploadFile = File(...) 
 ):
@@ -36,6 +37,7 @@ async def start_interview(
 
     initial_state = {
         "user_id": user_id,
+        "name": name,
         "target_role": role,
         "resume_text": resume_text,
         "candidate_profile": {},    
