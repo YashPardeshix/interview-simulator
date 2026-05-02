@@ -112,7 +112,10 @@ const ScorecardScreen = ({ candidate, feedback }) => (
 
 export default function InterviewSimulator({ session }) {
   const [screen, setScreen] = useState("welcome");
-  const [candidate, setCandidate] = useState({ name: "", role: "" });
+  const [candidate, setCandidate] = useState({
+    name: "",
+    role: "",
+  });
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [currentPhase, setCurrentPhase] = useState("");
   const [loading, setLoading] = useState(false);
@@ -171,29 +174,51 @@ export default function InterviewSimulator({ session }) {
     if (!answer.trim()) return;
     setLoading(true);
     setCurrentQuestion("");
+
     try {
-      const response = await axios.post("http://localhost:8000/answer", {
-        answer: answer,
-        thread_id: threadId,
+      const response = await fetch("http://localhost:8000/answer/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answer, thread_id: threadId }),
       });
 
-      const data = response.data;
-      if (data.is_complete || data.current_phase === "complete") {
-        setFeedback(data.scores?.feedback || "Evaluation data missing.");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let finished = false;
+
+      while (!finished) {
+        const { value, done } = await reader.read();
+        if (done) {
+          finished = true;
+          break;
+        }
+
+        const chunk = decoder.decode(value, { stream: true });
+
+        setLoading(false);
+
+        setCurrentQuestion((prev) => prev + chunk);
+      }
+
+      const statusRes = await axios.get(
+        `http://localhost:8000/state/${threadId}`,
+      );
+      const status = statusRes.data;
+
+      if (status.is_complete) {
+        setFeedback(status.scores?.feedback || "Evaluation data missing.");
         setScreen("scorecard");
       } else {
-        setCurrentQuestion(data.current_question);
-        setCurrentPhase(data.current_phase);
+        setCurrentPhase(status.current_phase);
         const textArea = document.getElementById("answer-input");
         if (textArea) textArea.value = "";
       }
     } catch (err) {
-      alert("Session interrupted.");
-    } finally {
+      console.error("Streaming error:", err);
+      alert("The connection was interrupted. Please try again.");
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-[#050507] text-white font-sans selection:bg-blue-500/30 antialiased">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">

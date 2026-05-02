@@ -6,6 +6,8 @@ import uuid
 from nodes import supabase
 from fastapi import FastAPI, File, UploadFile, Form
 from nodes import extract_text_from_pdf 
+from fastapi.responses import StreamingResponse
+import asyncio
 
 app = FastAPI()
 
@@ -86,3 +88,36 @@ def get_interview_history(user_id: str):
     except Exception as e:
         print(f"DEBUG: Error: {e}")
         return {"error": str(e)}
+    
+
+@app.post("/answer/stream")
+async def submit_answer_stream(input: AnswerInput):
+    config = {"configurable": {"thread_id": input.thread_id}}
+    
+    current_state = compiled_graph.get_state(config).values
+    updated_responses = current_state.get("user_response", []) + [input.answer]
+    compiled_graph.update_state(config, {"user_response": updated_responses})
+
+    async def event_generator():
+        async for event in compiled_graph.astream(None, config, stream_mode="updates"):
+            if "interview_node" in event:
+                content = event["interview_node"].get("current_question", "")
+                for char in content:
+                    yield char
+                    await asyncio.sleep(0.01)
+            if "evaluation_node" in event:
+                return 
+
+    return StreamingResponse(event_generator(), media_type="text/plain")
+
+
+@app.get("/state/{thread_id}")
+def get_current_state(thread_id: str):
+    config = {"configurable": {"thread_id": thread_id}}
+    state = compiled_graph.get_state(config).values
+    
+    return {
+        "current_phase": state.get("current_phase"),
+        "is_complete": state.get("current_phase") == "complete",
+        "scores": state.get("scores", {})
+    }
