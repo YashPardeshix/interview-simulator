@@ -353,6 +353,7 @@ TRANSCRIPT:
     try:
         supabase.table("interviews").insert({
             "user_id": state.get("user_id"),
+            "name": state.get("name", "Unknown"),
             "feedback_report": report,
             "target_role": state.get("target_role", "Software Engineer")
         }).execute()

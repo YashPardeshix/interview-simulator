@@ -357,6 +357,8 @@ export default function InterviewSimulator({ session }) {
   const [resumeFile, setResumeFile] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [previousScreen, setPreviousScreen] = useState("welcome");
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognitionRef, setRecognitionRef] = useState(null);
 
   const handleViewHistory = async () => {
     setLoading(true);
@@ -455,6 +457,64 @@ export default function InterviewSimulator({ session }) {
       setLoading(false);
     }
   };
+
+  const handleVoiceInput = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) return;
+
+    if (isRecording) {
+      recognitionRef.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      const textarea = document.getElementById("answer-input");
+      if (!textarea) return;
+
+      let finalTranscript = "";
+      let interimTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+
+      if (finalTranscript) {
+        textarea.value += finalTranscript + " ";
+      }
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === "not-allowed") {
+        alert(
+          "Microphone access denied. Please allow microphone access to use voice input.",
+        );
+      }
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      if (isRecording) {
+        recognition.start();
+      }
+    };
+
+    recognition.start();
+    setRecognitionRef(recognition);
+    setIsRecording(true);
+  };
+
   return (
     <div className="min-h-screen bg-[#050507] text-white font-sans selection:bg-blue-500/30 antialiased">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -600,6 +660,10 @@ export default function InterviewSimulator({ session }) {
                       <button
                         onClick={() => {
                           setFeedback(item.feedback_report);
+                          setCandidate({
+                            name: item.name || "—",
+                            role: item.target_role,
+                          });
                           setPreviousScreen("history");
                           setScreen("scorecard");
                         }}
@@ -689,22 +753,47 @@ export default function InterviewSimulator({ session }) {
                       to transmit
                     </span>
                   </div>
-                  <button
-                    onClick={() =>
-                      !isStreaming &&
-                      handleSubmitAnswer(
-                        document.getElementById("answer-input").value,
-                      )
-                    }
-                    disabled={isStreaming}
-                    className={`px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all shadow-2xl active:scale-95 ${
-                      isStreaming
-                        ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20"
-                    }`}
-                  >
-                    {isStreaming ? "Receiving..." : "Submit Response"}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    {(window.SpeechRecognition ||
+                      window.webkitSpeechRecognition) && (
+                      <button
+                        onClick={handleVoiceInput}
+                        disabled={isStreaming}
+                        className={`relative p-4 rounded-2xl transition-all border ${
+                          isRecording
+                            ? "bg-red-500/10 border-red-500/30 text-red-400"
+                            : "bg-white/5 border-white/5 text-zinc-500 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {isRecording ? (
+                          <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+                            <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                            Stop
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+                            🎙 Speak
+                          </span>
+                        )}
+                      </button>
+                    )}
+                    <button
+                      onClick={() =>
+                        !isStreaming &&
+                        handleSubmitAnswer(
+                          document.getElementById("answer-input").value,
+                        )
+                      }
+                      disabled={isStreaming}
+                      className={`px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all shadow-2xl active:scale-95 ${
+                        isStreaming
+                          ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                          : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20"
+                      }`}
+                    >
+                      {isStreaming ? "Receiving..." : "Submit Response"}
+                    </button>
+                  </div>
                 </div>
               </div>
             </GlassCard>
