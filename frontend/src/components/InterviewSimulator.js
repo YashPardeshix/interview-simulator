@@ -97,7 +97,7 @@ const VerdictStamp = ({ isHire }) => (
   </div>
 );
 
-const ScorecardScreen = ({ candidate, feedback }) => {
+const ScorecardScreen = ({ candidate, feedback, onBack, previousScreen }) => {
   const isHire = feedback?.includes("NO HIRE")
     ? false
     : feedback?.includes("HIRE");
@@ -300,6 +300,25 @@ const ScorecardScreen = ({ candidate, feedback }) => {
           gap: "12px",
         }}
       >
+        {previousScreen === "history" && (
+          <button
+            onClick={onBack}
+            style={{
+              background: "transparent",
+              border: "1px solid #222",
+              color: "#555",
+              padding: "16px",
+              borderRadius: "8px",
+              fontSize: "11px",
+              fontFamily: "monospace",
+              cursor: "pointer",
+              letterSpacing: "0.15em",
+            }}
+          >
+            ← BACK
+          </button>
+        )}
+
         <button
           onClick={() => window.location.reload()}
           style={{
@@ -336,6 +355,8 @@ export default function InterviewSimulator({ session }) {
   const [feedback, setFeedback] = useState("");
   const [history, setHistory] = useState([]);
   const [resumeFile, setResumeFile] = useState(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [previousScreen, setPreviousScreen] = useState("welcome");
 
   const handleViewHistory = async () => {
     setLoading(true);
@@ -386,6 +407,7 @@ export default function InterviewSimulator({ session }) {
 
   const handleSubmitAnswer = async (answer) => {
     if (!answer.trim()) return;
+    setIsStreaming(true);
     setLoading(true);
     setCurrentQuestion("");
 
@@ -404,6 +426,7 @@ export default function InterviewSimulator({ session }) {
         const { value, done } = await reader.read();
         if (done) {
           finished = true;
+          setIsStreaming(false);
           setLoading(false);
           break;
         }
@@ -419,6 +442,7 @@ export default function InterviewSimulator({ session }) {
 
       if (status.is_complete) {
         setFeedback(status.scores?.feedback || "Evaluation data missing.");
+        setPreviousScreen("interview");
         setScreen("scorecard");
       } else {
         setCurrentPhase(status.current_phase);
@@ -576,6 +600,7 @@ export default function InterviewSimulator({ session }) {
                       <button
                         onClick={() => {
                           setFeedback(item.feedback_report);
+                          setPreviousScreen("history");
                           setScreen("scorecard");
                         }}
                         className="w-full py-4 bg-white/5 group-hover:bg-blue-600 group-hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/5 flex items-center justify-center gap-2"
@@ -643,7 +668,9 @@ export default function InterviewSimulator({ session }) {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                       e.preventDefault();
-                      handleSubmitAnswer(e.target.value);
+                      if (!isStreaming) {
+                        handleSubmitAnswer(e.target.value);
+                      }
                     }
                   }}
                 />
@@ -664,19 +691,30 @@ export default function InterviewSimulator({ session }) {
                   </div>
                   <button
                     onClick={() =>
+                      !isStreaming &&
                       handleSubmitAnswer(
                         document.getElementById("answer-input").value,
                       )
                     }
-                    className="bg-blue-600 hover:bg-blue-500 px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all shadow-2xl shadow-blue-500/20 active:scale-95"
+                    disabled={isStreaming}
+                    className={`px-10 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all shadow-2xl active:scale-95 ${
+                      isStreaming
+                        ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20"
+                    }`}
                   >
-                    Submit Response
+                    {isStreaming ? "Receiving..." : "Submit Response"}
                   </button>
                 </div>
               </div>
             </GlassCard>
           ) : screen === "scorecard" ? (
-            <ScorecardScreen candidate={candidate} feedback={feedback} />
+            <ScorecardScreen
+              candidate={candidate}
+              feedback={feedback}
+              onBack={() => setScreen(previousScreen)}
+              previousScreen={previousScreen}
+            />
           ) : null}
         </AnimatePresence>
       </main>
