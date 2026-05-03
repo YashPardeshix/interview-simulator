@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Trophy,
 } from "lucide-react";
+import { supabase } from "../supabaseClient";
 
 const GlassCard = ({ children, className = "" }) => (
   <motion.div
@@ -359,6 +360,7 @@ export default function InterviewSimulator({ session }) {
   const [previousScreen, setPreviousScreen] = useState("welcome");
   const [isRecording, setIsRecording] = useState(false);
   const [recognitionRef, setRecognitionRef] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   const handleViewHistory = async () => {
     setLoading(true);
@@ -372,6 +374,22 @@ export default function InterviewSimulator({ session }) {
       alert("Could not load history.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteInterview = async (id) => {
+    try {
+      const { error } = await supabase.from("interviews").delete().eq("id", id);
+
+      if (error) {
+        alert("Could not delete: " + error.message);
+        return;
+      }
+
+      setHistory(history.filter((item) => item.id !== id));
+      setConfirmDeleteId(null);
+    } catch (err) {
+      alert("Could not delete record.");
     }
   };
 
@@ -606,6 +624,12 @@ export default function InterviewSimulator({ session }) {
                     <RefreshCcw className="w-3.5 h-3.5 text-zinc-500" /> Access
                     Records Vault
                   </button>
+                  <button
+                    onClick={() => supabase.auth.signOut()}
+                    className="w-full bg-transparent text-zinc-600 py-3 rounded-3xl font-bold uppercase tracking-widest text-[10px] border border-white/5 hover:text-zinc-400 transition-all"
+                  >
+                    Sign Out
+                  </button>
                 </div>
               </div>
             </GlassCard>
@@ -657,6 +681,24 @@ export default function InterviewSimulator({ session }) {
                           {item.target_role}
                         </h3>
                       </div>
+                      <button
+                        onClick={() => {
+                          if (confirmDeleteId === item.id) {
+                            handleDeleteInterview(item.id);
+                          } else {
+                            setConfirmDeleteId(item.id);
+                          }
+                        }}
+                        className={`w-full py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-2 mb-2 ${
+                          confirmDeleteId === item.id
+                            ? "bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20"
+                            : "bg-white/5 border-white/5 text-zinc-600 hover:text-zinc-400 hover:bg-white/10"
+                        }`}
+                      >
+                        {confirmDeleteId === item.id
+                          ? "Confirm Delete"
+                          : "Delete"}
+                      </button>
                       <button
                         onClick={() => {
                           setFeedback(item.feedback_report);
