@@ -271,7 +271,11 @@ const ScorecardScreen = ({ candidate, feedback, onBack, previousScreen }) => {
                   </code>
                 ),
                 strong: ({ children }) => {
-                  const text = typeof children === "string" ? children : "";
+                  const text = Array.isArray(children)
+                    ? children.join("")
+                    : typeof children === "string"
+                      ? children
+                      : "";
                   if (
                     text === "STRONG" ||
                     text === "WEAK" ||
