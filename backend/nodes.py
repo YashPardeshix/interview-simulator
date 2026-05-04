@@ -43,7 +43,11 @@ def interview_node(state: InterviewState):
         You are a Senior Lead Interviewer.
         PHASE: {phase}
         TOPIC: {topic}
+        TARGET ROLE: {state.get('target_role', '')}
         REMAINING FOLLOW-UPS: {2 - count}
+        PREVIOUSLY ASKED QUESTIONS ON THIS TOPIC:
+        {history[-2:] if len(history) >= 2 else history}
+        CONSTRAINT: Your question must go ONE LAYER DEEPER than the previous question. Never ask the same angle twice.
 
         CANDIDATE BACKGROUND:
         {profile}
@@ -59,17 +63,16 @@ def interview_node(state: InterviewState):
         3. Tailor the question to their CANDIDATE BACKGROUND if relevant.
         """
         response = llm.invoke(prompt)
-        
         new_question = response.content
         new_count = count + 1
-        new_topic = topic 
-        new_phase_count = state["phase_topic_count"] 
+        new_topic = topic
+        new_phase_count = state["phase_topic_count"]
     else:
         profile = state.get("candidate_profile", {})
-        new_question = get_random_question(phase, profile)
+        new_question = get_random_question(phase, profile, state.get("target_role", ""))
         new_count = 0
-        new_topic = new_question 
-        new_phase_count = state["phase_topic_count"] + 1 
+        new_topic = new_question
+        new_phase_count = state["phase_topic_count"] + 1
 
     return {
         "current_question": new_question,
