@@ -358,6 +358,8 @@ const ScorecardScreen = ({ candidate, feedback, onBack, previousScreen }) => {
 };
 
 export default function InterviewSimulator({ session }) {
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+
   const [screen, setScreen] = useState("welcome");
   const [candidate, setCandidate] = useState({
     name: "",
@@ -380,7 +382,7 @@ export default function InterviewSimulator({ session }) {
     setLoading(true);
     try {
       const response = await axios.get(
-        `http://localhost:8000/history/${session.user.id}`,
+        `${API_BASE_URL}/history/${session.user.id}`,
       );
       setHistory(response.data);
       setScreen("history");
@@ -420,13 +422,9 @@ export default function InterviewSimulator({ session }) {
       formData.append("role", candidate.role);
       formData.append("resume", resumeFile);
 
-      const response = await axios.post(
-        "http://localhost:8000/start",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      );
+      const response = await axios.post(`${API_BASE_URL}/start`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       setThreadId(response.data.thread_id);
       setCurrentQuestion(response.data.current_question);
@@ -446,7 +444,7 @@ export default function InterviewSimulator({ session }) {
     setCurrentQuestion("");
 
     try {
-      const response = await fetch("http://localhost:8000/answer/stream", {
+      const response = await fetch(`${API_BASE_URL}/answer/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answer, thread_id: threadId }),
@@ -469,9 +467,7 @@ export default function InterviewSimulator({ session }) {
         setCurrentQuestion((prev) => prev + chunk);
       }
 
-      const statusRes = await axios.get(
-        `http://localhost:8000/state/${threadId}`,
-      );
+      const statusRes = await axios.get(`${API_BASE_URL}/state/${threadId}`);
       const status = statusRes.data;
 
       if (status.is_complete) {
