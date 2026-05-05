@@ -6,13 +6,9 @@ import {
   User,
   Briefcase,
   ChevronRight,
-  CheckCircle,
   RefreshCcw,
   Loader2,
-  Printer,
   FileText,
-  AlertCircle,
-  Trophy,
 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
@@ -516,13 +512,10 @@ export default function InterviewSimulator({ session }) {
       if (!textarea) return;
 
       let finalTranscript = "";
-      let interimTranscript = "";
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
           finalTranscript += event.results[i][0].transcript;
-        } else {
-          interimTranscript += event.results[i][0].transcript;
         }
       }
 
