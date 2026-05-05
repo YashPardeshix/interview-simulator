@@ -577,7 +577,7 @@ export default function InterviewSimulator({ session }) {
                   Processing Context
                 </p>
                 <p className="text-zinc-400 text-sm font-light italic">
-                  Lumina is analyzing the depth of your response...
+                  Xiphos is analyzing the depth of your response...
                 </p>
               </div>
             </motion.div>
@@ -588,7 +588,7 @@ export default function InterviewSimulator({ session }) {
             >
               <div className="text-center space-y-3">
                 <h1 className="text-6xl font-bold tracking-tighter bg-gradient-to-b from-white via-white to-white/20 bg-clip-text text-transparent">
-                  Lumina
+                  Xiphos
                 </h1>
                 <p className="text-zinc-500 font-light tracking-wide">
                   Elite AI Interview Simulation

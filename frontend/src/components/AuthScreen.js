@@ -23,7 +23,7 @@ export default function AuthScreen() {
 
       <div className="z-10 text-center mb-8 space-y-2">
         <h1 className="text-5xl font-bold tracking-tight bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
-          Lumina
+          Xiphos
         </h1>
         <p className="text-zinc-400 font-light italic">
           Sign in to your professional vault.
