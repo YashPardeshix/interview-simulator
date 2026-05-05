@@ -35,8 +35,8 @@ def interview_node(state: InterviewState):
     count = state["topic_follow_up_count"]
     topic = state["current_topic"]
     history = state["questions_asked"]
-
     profile = state.get("candidate_profile", {})
+    last_answer = state.get("user_response", [""])[-1] if state.get("user_response") else "No answer yet"
 
     if count < 2 and topic != "":
         prompt = f"""
@@ -47,7 +47,16 @@ def interview_node(state: InterviewState):
         REMAINING FOLLOW-UPS: {2 - count}
         PREVIOUSLY ASKED QUESTIONS ON THIS TOPIC:
         {history[-2:] if len(history) >= 2 else history}
-        CONSTRAINT: Your question must go ONE LAYER DEEPER than the previous question. Never ask the same angle twice.
+
+        CANDIDATE'S LAST ANSWER:
+        {last_answer}
+        CONSTRAINT: 
+        - Read the candidate's last answer carefully before generating the next question.
+        - If they said "idk" or gave no answer — do not go deeper. Redirect to a simpler related angle or a different aspect of the same topic.
+        - If they gave a strong answer — push harder on the strongest claim they made.
+        - If they revealed they work alone or have no teammates — never ask about team dynamics. Ask about self-management, independent decision making, or learning from mistakes instead.
+        - Never ask the same angle twice.
+
 
         CANDIDATE BACKGROUND:
         {profile}

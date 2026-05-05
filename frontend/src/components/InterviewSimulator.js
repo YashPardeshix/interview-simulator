@@ -276,12 +276,26 @@ const ScorecardScreen = ({ candidate, feedback, onBack, previousScreen }) => {
                     : typeof children === "string"
                       ? children
                       : "";
+
                   if (
-                    text === "STRONG" ||
-                    text === "WEAK" ||
-                    text === "MODERATE"
+                    text.includes("STRONG") ||
+                    text.includes("WEAK") ||
+                    text.includes("MODERATE")
                   ) {
-                    return <SignalBadge text={text} />;
+                    const parts = text.split(/(STRONG|MODERATE|WEAK)/);
+                    return (
+                      <strong style={{ color: "#e5e5e5", fontWeight: "600" }}>
+                        {parts.map((part, i) =>
+                          part === "STRONG" ||
+                          part === "WEAK" ||
+                          part === "MODERATE" ? (
+                            <SignalBadge key={i} text={part} />
+                          ) : (
+                            part
+                          ),
+                        )}
+                      </strong>
+                    );
                   }
                   return (
                     <strong style={{ color: "#e5e5e5", fontWeight: "600" }}>
