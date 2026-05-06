@@ -458,14 +458,27 @@ export default function InterviewSimulator({ session }) {
         const { value, done } = await reader.read();
         if (done) {
           finished = true;
-          setIsStreaming(false);
-          setLoading(false);
           break;
         }
-        const chunk = decoder.decode(value, { stream: true });
-        setLoading(false);
-        setCurrentQuestion((prev) => prev + chunk);
+
+        const text = decoder.decode(value, { stream: true });
+        const lines = text.split("\n\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data.trim() === "[DONE]") {
+              finished = true;
+              break;
+            }
+            setLoading(false);
+            setCurrentQuestion((prev) => prev + data);
+          }
+        }
       }
+
+      setIsStreaming(false);
+      setLoading(false);
 
       const statusRes = await axios.get(`${API_BASE_URL}/state/${threadId}`);
       const status = statusRes.data;
@@ -483,6 +496,7 @@ export default function InterviewSimulator({ session }) {
       console.error("Streaming error:", err);
       alert("The connection was interrupted. Please try again.");
       setLoading(false);
+      setIsStreaming(false);
     }
   };
 

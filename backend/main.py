@@ -99,20 +99,18 @@ async def submit_answer_stream(input: AnswerInput):
     updated_responses = current_state.get("user_response", []) + [input.answer]
     compiled_graph.update_state(config, {"user_response": updated_responses})
 
+    result = await compiled_graph.ainvoke(None, config)
+    question = result.get("current_question", "")
+
     async def event_generator():
-        async for chunk, metadata in compiled_graph.astream(
-            None, config, stream_mode="messages"
-        ):
-            if (
-                metadata.get("langgraph_node") == "interview_node"
-                and hasattr(chunk, "content")
-                and chunk.content
-            ):
-                yield chunk.content
+        for word in question.split(" "):
+            yield f"data: {word} \n\n"
+            await asyncio.sleep(0.06)
+        yield "data: [DONE]\n\n"
 
     return StreamingResponse(
         event_generator(),
-        media_type="text/plain",
+        media_type="text/event-stream",
         headers={
             "X-Accel-Buffering": "no",
             "Cache-Control": "no-cache",
