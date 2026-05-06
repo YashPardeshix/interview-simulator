@@ -109,7 +109,15 @@ async def submit_answer_stream(input: AnswerInput):
             if "evaluation_node" in event:
                 return 
 
-    return StreamingResponse(event_generator(), media_type="text/plain")
+    return StreamingResponse(
+    event_generator(),
+    media_type="text/plain",
+    headers={
+        "X-Accel-Buffering": "no",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive"
+    }
+)
 
 @app.get("/state/{thread_id}") 
 def get_current_state(thread_id: str): 
