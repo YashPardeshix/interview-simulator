@@ -100,24 +100,26 @@ async def submit_answer_stream(input: AnswerInput):
     compiled_graph.update_state(config, {"user_response": updated_responses})
 
     async def event_generator():
-        async for event in compiled_graph.astream(None, config, stream_mode="updates"):
-            if "interview_node" in event:
-                content = event["interview_node"].get("current_question", "")
-                for char in content:
-                    yield char
-                    await asyncio.sleep(0.01)
-            if "evaluation_node" in event:
-                return 
+        async for chunk, metadata in compiled_graph.astream(
+            None, config, stream_mode="messages"
+        ):
+            if (
+                metadata.get("langgraph_node") == "interview_node"
+                and hasattr(chunk, "content")
+                and chunk.content
+            ):
+                yield chunk.content
 
     return StreamingResponse(
-    event_generator(),
-    media_type="text/plain",
-    headers={
-        "X-Accel-Buffering": "no",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive"
-    }
-)
+        event_generator(),
+        media_type="text/plain",
+        headers={
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+        }
+    )
+
 
 @app.get("/state/{thread_id}") 
 def get_current_state(thread_id: str): 
