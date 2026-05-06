@@ -5,6 +5,7 @@ from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from pypdf import PdfReader
+import asyncio
 import json
 import os
 import io
@@ -30,7 +31,7 @@ llm = ChatOpenAI(
     max_retries=1
 )
 
-def interview_node(state: InterviewState):
+async def interview_node(state: InterviewState):
     phase = state["current_phase"]
     count = state["topic_follow_up_count"]
     topic = state["current_topic"]
@@ -71,14 +72,16 @@ def interview_node(state: InterviewState):
         2. Max length: 2 to 3 sentences.
         3. Tailor the question to their CANDIDATE BACKGROUND if relevant.
         """
-        response = llm.invoke(prompt)
+        response = await llm.ainvoke(prompt)
         new_question = response.content
         new_count = count + 1
         new_topic = topic
         new_phase_count = state["phase_topic_count"]
     else:
         profile = state.get("candidate_profile", {})
-        new_question = get_random_question(phase, profile, state.get("target_role", ""))
+        new_question = await asyncio.to_thread(
+            get_random_question, phase, profile, state.get("target_role", "")
+        )
         new_count = 0
         new_topic = new_question
         new_phase_count = state["phase_topic_count"] + 1
