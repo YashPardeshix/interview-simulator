@@ -28,7 +28,8 @@ llm = ChatOpenAI(
     api_key=api_key,
     base_url="https://api.deepseek.com",
     timeout=120, 
-    max_retries=1
+    max_retries=1,
+    streaming=True
 )
 
 async def interview_node(state: InterviewState):
