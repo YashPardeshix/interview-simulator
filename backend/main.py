@@ -52,7 +52,7 @@ async def start_interview(
         "current_topic": ""
     }
 
-    result = compiled_graph.invoke(initial_state, config)
+    result = await compiled_graph.ainvoke(initial_state, config)
 
     return {
         "thread_id": thread_id,
@@ -61,12 +61,12 @@ async def start_interview(
     }
 
 @app.post("/answer") 
-def submit_answer(input: AnswerInput): 
+async def submit_answer(input: AnswerInput): 
     config = {"configurable": {"thread_id": input.thread_id}} 
     current_state = compiled_graph.get_state(config).values 
     updated_responses = current_state.get("user_response", []) + [input.answer]
     compiled_graph.update_state(config, {"user_response": updated_responses}) 
-    result = compiled_graph.invoke(None, config)
+    result = await compiled_graph.ainvoke(None, config)
 
     return {
         "current_phase": result["current_phase"],
