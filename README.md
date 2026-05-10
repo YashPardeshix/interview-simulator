@@ -1,6 +1,6 @@
 # Xiphos
 
-An AI-powered interview simulator that actually reads your resume before asking questions.
+An AI-powered interview simulator that actually reads your resume before asking questions
 
 Most mock interview tools ask the same generic questions to everyone. Xiphos pulls your resume,
 figures out what you've actually built, and runs you through three phases — system design,
