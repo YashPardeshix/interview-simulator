@@ -1,5 +1,7 @@
 # Xiphos
 
+Live Dashboard: https://xiphos-woad.vercel.app/
+
 An AI-powered interview simulator that actually reads your resume before asking questions.
 
 Most mock interview tools ask the same generic questions to everyone. Xiphos pulls your resume,
